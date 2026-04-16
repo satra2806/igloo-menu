@@ -76,6 +76,13 @@
       background: #C96B3C;
     }
 
+    #errorMsg {
+      color: #c0392b;
+      font-size: 0.8rem;
+      display: none;
+      margin-top: 0.5rem;
+    }
+
     /* PRINTABLE QR CARD */
     .qr-card {
       width: 350px;
@@ -172,11 +179,12 @@
 <body>
 
   <div class="setup-panel" id="setupPanel">
-    <h2>Generate Menu QR Code</h2>
-    <p>Enter the URL where you hosted your Igloo menu page. The QR code will be generated for customers to scan.</p>
-    <input type="url" id="menuUrl" value="https://igloo-menu.vercel.app/" placeholder="https://your-site.com/menu">
+    <h2>Admin Access</h2>
+    <p>Enter the password to generate the menu QR code.</p>
+    <input type="password" id="adminPass" placeholder="Enter password">
+    <span id="errorMsg">Incorrect password</span>
     <br>
-    <button onclick="generateQR()">Generate QR Code</button>
+    <button onclick="authenticate()">Unlock QR Code</button>
   </div>
 
   <div class="qr-card" id="qrCard">
@@ -192,25 +200,49 @@
   <!-- QR Code library (qrcode.js - reliable browser library) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script>
-    var qrInstance = null;
+    // SHA-256 hash of the password (hashed so it's not visible in source)
+    var PASSWORD_HASH = '7b65cef585438c625f98e245858ea5f33661aac61bc56a88d2b82d3a71b7f536';
+
+    async function hashPassword(pass) {
+      var msgBuffer = new TextEncoder().encode(pass);
+      var hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+      var hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+    }
+
+    async function authenticate() {
+      var pass = document.getElementById('adminPass').value;
+      var hash = await hashPassword(pass);
+
+      if (hash === PASSWORD_HASH) {
+        document.getElementById('errorMsg').style.display = 'none';
+        document.getElementById('setupPanel').style.display = 'none';
+        generateQR();
+      } else {
+        document.getElementById('errorMsg').style.display = 'block';
+      }
+    }
+
+    // Allow Enter key to submit
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('adminPass').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') authenticate();
+      });
+    });
+
+    var MENU_URL = 'https://igloo-menu.vercel.app/';
 
     function generateQR() {
-      const url = document.getElementById('menuUrl').value.trim();
-      if (!url) {
-        alert('Please enter a valid URL');
-        return;
-      }
-
       if (typeof QRCode === 'undefined') {
         alert('QR library failed to load. Please refresh the page and try again.');
         return;
       }
 
-      const qrContainer = document.getElementById('qrCode');
+      var qrContainer = document.getElementById('qrCode');
       qrContainer.innerHTML = '';
 
-      qrInstance = new QRCode(qrContainer, {
-        text: url,
+      new QRCode(qrContainer, {
+        text: MENU_URL,
         width: 220,
         height: 220,
         colorDark: '#3D2B1F',
