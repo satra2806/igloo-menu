@@ -118,8 +118,13 @@
       margin-bottom: 1.5rem;
     }
 
-    #qrCanvas {
+    #qrCode {
       margin: 0 auto;
+      display: flex;
+      justify-content: center;
+    }
+
+    #qrCode img, #qrCode canvas {
       display: block;
     }
 
@@ -169,7 +174,7 @@
   <div class="setup-panel" id="setupPanel">
     <h2>Generate Menu QR Code</h2>
     <p>Enter the URL where you hosted your Igloo menu page. The QR code will be generated for customers to scan.</p>
-    <input type="url" id="menuUrl" value="http://darling-gaufre-de10d7.netlify.app" placeholder="https://your-site.com/menu">
+    <input type="url" id="menuUrl" value="https://igloo-menu.vercel.app/" placeholder="https://your-site.com/menu">
     <br>
     <button onclick="generateQR()">Generate QR Code</button>
   </div>
@@ -177,16 +182,18 @@
   <div class="qr-card" id="qrCard">
     <div class="qr-brand">IGLOO</div>
     <div class="qr-tagline">Chill. Eat. Repeat.</div>
-    <canvas id="qrCanvas"></canvas>
+    <div id="qrCode"></div>
     <div class="qr-label">Scan to View Menu</div>
     <div class="qr-sublabel">Place your order with the server</div>
     <br>
     <button class="print-btn" onclick="window.print()">Print QR Code</button>
   </div>
 
-  <!-- QR Code library (lightweight, no dependencies) -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+  <!-- QR Code library (qrcode.js - reliable browser library) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script>
+    var qrInstance = null;
+
     function generateQR() {
       const url = document.getElementById('menuUrl').value.trim();
       if (!url) {
@@ -194,22 +201,24 @@
         return;
       }
 
-      const canvas = document.getElementById('qrCanvas');
-      QRCode.toCanvas(canvas, url, {
+      if (typeof QRCode === 'undefined') {
+        alert('QR library failed to load. Please refresh the page and try again.');
+        return;
+      }
+
+      const qrContainer = document.getElementById('qrCode');
+      qrContainer.innerHTML = '';
+
+      qrInstance = new QRCode(qrContainer, {
+        text: url,
         width: 220,
-        margin: 2,
-        color: {
-          dark: '#3D2B1F',
-          light: '#FFFFFF'
-        }
-      }, function (error) {
-        if (error) {
-          alert('Error generating QR code. Please check the URL.');
-          console.error(error);
-          return;
-        }
-        document.getElementById('qrCard').classList.add('show');
+        height: 220,
+        colorDark: '#3D2B1F',
+        colorLight: '#FFFFFF',
+        correctLevel: QRCode.CorrectLevel.H
       });
+
+      document.getElementById('qrCard').classList.add('show');
     }
   </script>
 

@@ -26,7 +26,7 @@
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html { scroll-behavior: smooth; scroll-padding-top: 60px; }
+    html { scroll-padding-top: 60px; }
 
     body {
       font-family: 'DM Sans', sans-serif;
@@ -689,25 +689,38 @@
   </footer>
 
   <script>
-    // Active nav highlighting on scroll
     const navLinks = document.querySelectorAll('.nav a');
+    const navBar = document.getElementById('navBar');
     const sections = document.querySelectorAll('.menu-section');
 
+    // Highlight active nav on scroll — no scrollIntoView to avoid hijacking scroll
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           const id = entry.target.id;
-          navLinks.forEach(link => {
-            link.classList.toggle('active', link.dataset.section === id);
-            if (link.dataset.section === id) {
-              link.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-            }
-          });
+          navLinks.forEach(link => link.classList.toggle('active', link.dataset.section === id));
+          // Scroll nav bar horizontally without affecting page scroll
+          const activeLink = navBar.querySelector(`[data-section="${id}"]`);
+          if (activeLink) {
+            const navRect = navBar.getBoundingClientRect();
+            const linkRect = activeLink.getBoundingClientRect();
+            const scrollLeft = navBar.scrollLeft + linkRect.left - navRect.left - navRect.width / 2 + linkRect.width / 2;
+            navBar.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+          }
         }
       });
     }, { threshold: 0.3, rootMargin: '-60px 0px -50% 0px' });
 
     sections.forEach(s => observer.observe(s));
+
+    // Smooth scroll only when nav links are tapped
+    navLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = document.getElementById(link.dataset.section);
+        if (target) target.scrollIntoView({ behavior: 'smooth' });
+      });
+    });
   </script>
 
 </body>
